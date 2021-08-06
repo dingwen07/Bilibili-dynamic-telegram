@@ -1,0 +1,3 @@
+[submodule "Bilibili-dynamic"]
+	path = Bilibili-dynamic
+	url = https://github.com/dingwen07/Bilibili-dynamic.git
