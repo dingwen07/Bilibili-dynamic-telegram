@@ -12,6 +12,9 @@ from command_controller import CommandController
 UploaderDynamic = importlib.import_module(
     'Bilibili-dynamic.updynamic').UploaderDynamic
 
+def print_stack_trace(e):
+    import traceback
+    traceback.print_exc()
 
 class Bot:
     def __init__(self, api_token):
@@ -29,18 +32,29 @@ class Bot:
             print(e)
 
     def start(self):
+        threading.Thread(target=self._dynamic_thread_runner).start()
+        threading.Thread(target=self._updates_thread_runner).start()
+    
+    def _dynamic_thread_runner(self):
         while True:
             try:
                 dynamic_thread = threading.Thread(target=self._dynamic_polling)
-                updates_thread =  threading.Thread(target=self._updates_processing)
                 dynamic_thread.start()
-                updates_thread.start()
                 dynamic_thread.join()
-                updates_thread.join()
             except Exception as e:
-                print(e)
+                print_stack_trace(e)
                 continue
     
+    def _updates_thread_runner(self):
+        while True:
+            try:
+                updates_thread = threading.Thread(target=self._updates_processing)
+                updates_thread.start()
+                updates_thread.join()
+            except Exception as e:
+                print_stack_trace(e)
+                continue
+
     def refresh(self):
         self._reload_subscription_table()
         self.refresh_required = True
@@ -66,7 +80,7 @@ class Bot:
                     command_controller.process_command(update)
                 except Exception as e:
                     print(e)
-            time.sleep(1)
+            time.sleep(0.5)
 
     def _dynamic_polling(self):
         bot_controller = BotController(self.api_token)
