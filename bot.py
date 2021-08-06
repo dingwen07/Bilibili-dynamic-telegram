@@ -9,12 +9,10 @@ import sqlite3
 from config import DB_PATH
 from bot_controller import BotController
 from command_controller import CommandController
+from utilities import print_stack_trace
 UploaderDynamic = importlib.import_module(
     'Bilibili-dynamic.updynamic').UploaderDynamic
 
-def print_stack_trace(e):
-    import traceback
-    traceback.print_exc()
 
 class Bot:
     def __init__(self, api_token):
@@ -29,7 +27,7 @@ class Bot:
         try:
             self.refresh()
         except Exception as e:
-            print(e)
+            print_stack_trace(e)
 
     def start(self):
         threading.Thread(target=self._dynamic_thread_runner).start()
@@ -66,7 +64,7 @@ class Bot:
             try:
                 updates = bot_controller.get_updates()
             except Exception as e:
-                print(e)
+                print_stack_trace(e)
                 time.sleep(10)
                 continue
             if not updates['ok']:
@@ -79,7 +77,7 @@ class Bot:
                 try:
                     command_controller.process_command(update)
                 except Exception as e:
-                    print(e)
+                    print_stack_trace(e)
             time.sleep(0.5)
 
     def _dynamic_polling(self):
@@ -105,7 +103,7 @@ class Bot:
             try:
                 bot_controller.send_message(chat_id=chat_id, text=str(dynamic))
             except Exception as e:
-                print(e)
+                print_stack_trace(e)
 
     def _reload_subscription_table(self):
         print('reload subscription table...')
