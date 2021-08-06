@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IDE
+.vscode
+.idea
+
+# Fuck macOS
+.DS_Store
+
+# Project
+config.py
