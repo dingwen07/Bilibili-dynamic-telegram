@@ -59,7 +59,6 @@ class Bot:
 
     def _updates_processing(self):
         bot_controller = BotController(self.api_token)
-        command_controller = CommandController(self, bot_controller)
         while True:
             try:
                 updates = bot_controller.get_updates()
@@ -75,10 +74,15 @@ class Bot:
                 continue
             for update in updates['result']:
                 try:
-                    command_controller.process_command(update)
+                    threading.Thread(target=self._updates_single, args=(update,)).start()
                 except Exception as e:
                     print_stack_trace(e)
-            time.sleep(0.5)
+            time.sleep(0.3)
+
+    def _updates_single(self, update):
+        bot_controller = BotController(self.api_token)
+        command_controller = CommandController(self, bot_controller)
+        command_controller.process_command(update)
 
     def _dynamic_polling(self):
         bot_controller = BotController(self.api_token)
