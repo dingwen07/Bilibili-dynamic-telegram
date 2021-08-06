@@ -91,7 +91,7 @@ class CommandController:
                 self.bot.refresh()
             except Exception as e:
                 print_stack_trace(e)
-                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(uploader_uid), '请联系Bot开发者'), parse_mode="MarkdownV2")
+                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(command[1]), '请确认UID合法, 并重试'), parse_mode="MarkdownV2")
                 print(response)
                 return
     def _unsubscribe(self, chat_id, command):
