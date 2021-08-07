@@ -141,3 +141,4 @@ config.py
 *.png
 *.jpg
 *.webp
+diagnosis.json

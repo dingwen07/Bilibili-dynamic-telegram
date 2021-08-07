@@ -57,6 +57,7 @@ class CommandController:
                 try:
                     uploader_name = self.bot.updynamic_table[subscription[1]].uploader_name
                 except Exception as e:
+                    print('Exception at CommandController._list_subscriptions (#57)')
                     uploader_name = 'Unknown'
                     self.bot.refresh()
                     print_stack_trace(e)
@@ -78,6 +79,7 @@ class CommandController:
                     return
                 try:
                     up = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
+                    up.get_update()
                     print(up)
                     up.refresh_info()
                 except Exception as e:

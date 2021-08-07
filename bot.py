@@ -30,6 +30,7 @@ class Bot:
         try:
             self.refresh()
         except Exception as e:
+            print('Exception at Bot.__init__')
             print_stack_trace(e)
 
     def start(self):
@@ -47,6 +48,7 @@ class Bot:
                 dynamic_thread.start()
                 dynamic_thread.join()
             except Exception as e:
+                print('Exception at Bot._dynamic_thread_runner, thread dead')
                 print_stack_trace(e)
                 self.updynamic_table = {}
                 self.refresh()
@@ -59,6 +61,7 @@ class Bot:
                 updates_thread.start()
                 updates_thread.join()
             except Exception as e:
+                print('Exception at Bot._updates_thread_runner, thread dead')
                 print_stack_trace(e)
                 continue
 
@@ -68,6 +71,7 @@ class Bot:
             try:
                 updates = bot_controller.get_updates()
             except Exception as e:
+                print('Exception at Bot._updates_processing, after bot_controller.get_updates()')
                 print_stack_trace(e)
                 time.sleep(10)
                 continue
@@ -81,6 +85,7 @@ class Bot:
                 try:
                     threading.Thread(target=self._updates_single, args=(update,)).start()
                 except Exception as e:
+                    print('Exception at Bot._updates_processing, after Bot._updates_single')
                     print_stack_trace(e)
             time.sleep(0.3)
 
@@ -103,6 +108,7 @@ class Bot:
                 try:
                     updates = self.updynamic_table[uploader_uid].get_update()
                 except Exception as e:
+                    print('Exception at Bot._dynamic_polling')
                     print_stack_trace(e)
                     self.updynamic_table[uploader_uid] = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
                     updates = self.updynamic_table[uploader_uid].get_update()
@@ -119,6 +125,7 @@ class Bot:
                 response = bot_controller.send_message(chat_id=chat_id, text=text, parse_mode='HTML')
                 print(response)
             except Exception as e:
+                print('Exception at Bot._broadcast_dynamic')
                 print_stack_trace(e)
 
     def _reload_subscription_table(self):
