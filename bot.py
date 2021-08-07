@@ -2,16 +2,19 @@ import importlib
 import time
 import threading
 import sqlite3
+import sys
+import os
 
-
-# sys.path.append(os.path.abspath('./Bilibili-dynamic'))
 # from updynamic import UploaderDynamic
+sys.path.append(os.path.abspath('./Bilibili-dynamic'))
 from config import DB_PATH
+from constants import MESSAGES
 from bot_controller import BotController
 from command_controller import CommandController
 from utilities import print_stack_trace
 UploaderDynamic = importlib.import_module(
     'Bilibili-dynamic.updynamic').UploaderDynamic
+DynamicParser = importlib.import_module('Bilibili-dynamic.dynamic_parser').DynamicParser
 
 
 class Bot:
@@ -33,6 +36,10 @@ class Bot:
         threading.Thread(target=self._dynamic_thread_runner).start()
         threading.Thread(target=self._updates_thread_runner).start()
     
+    def refresh(self):
+        self._reload_subscription_table()
+        self.refresh_required = True
+
     def _dynamic_thread_runner(self):
         while True:
             try:
@@ -41,6 +48,8 @@ class Bot:
                 dynamic_thread.join()
             except Exception as e:
                 print_stack_trace(e)
+                self.updynamic_table = {}
+                self.refresh()
                 continue
     
     def _updates_thread_runner(self):
@@ -52,10 +61,6 @@ class Bot:
             except Exception as e:
                 print_stack_trace(e)
                 continue
-
-    def refresh(self):
-        self._reload_subscription_table()
-        self.refresh_required = True
 
     def _updates_processing(self):
         bot_controller = BotController(self.api_token)
@@ -88,24 +93,31 @@ class Bot:
         bot_controller = BotController(self.api_token)
         while True:
             print('polling...')
-            print(self.subscription_table)
             if self.refresh_required:
                 self.refresh_required = False
                 for updynamic in self.updynamic_table.values():
                     updynamic.refresh_info()
             for uploader_uid in self.subscription_table.keys():
                 if not uploader_uid in self.updynamic_table.keys():
-                    self.updynamic_table[uploader_uid] = UploaderDynamic(uploader_uid)
-                updates = self.updynamic_table[uploader_uid].get_update()
+                    self.updynamic_table[uploader_uid] = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
+                try:
+                    updates = self.updynamic_table[uploader_uid].get_update()
+                except Exception as e:
+                    print_stack_trace(e)
+                    self.updynamic_table[uploader_uid] = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
+                    updates = self.updynamic_table[uploader_uid].get_update()
                 if len(updates) > 0:
                     for update in updates:
                         self._broadcast_dynamic(bot_controller, update, self.subscription_table[uploader_uid])
-            time.sleep(10)
+            time.sleep(30)
 
     def _broadcast_dynamic(self, bot_controller, dynamic, chat_ids):
+        text = '<b>{}</b>\n\n'.format(MESSAGES.NOTIFICATION_TITLE)
+        text += DynamicParser.html_parser(dynamic)
         for chat_id in chat_ids:
             try:
-                bot_controller.send_message(chat_id=chat_id, text=str(dynamic))
+                response = bot_controller.send_message(chat_id=chat_id, text=text, parse_mode='HTML')
+                print(response)
             except Exception as e:
                 print_stack_trace(e)
 

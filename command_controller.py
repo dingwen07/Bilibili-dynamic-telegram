@@ -26,11 +26,11 @@ class CommandController:
 
         if command[0] == "/start":
             print("/start")
-            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.WELCOME, parse_mode="MarkdownV2")
+            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.WELCOME, parse_mode="HTML")
             print(response)
         elif command[0] == "/help":
             print("/help")
-            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.HELP, parse_mode="MarkdownV2")
+            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.HELP, parse_mode="HTML")
             print(response)
         elif command[0] == "/list":
             print("/list")
@@ -43,14 +43,14 @@ class CommandController:
             print("/unsubscribe")
             self._unsubscribe(chat_id, command)
         else:
-            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="MarkdownV2")
+            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="HTML")
             print(response)
 
     
     def _list_subscriptions(self, chat_id):
         subscriptions = self.db_cursor.execute('''SELECT "id", "uploader_uid" FROM subscriptions WHERE "is_active"=1 AND "chat_id"=?''', (chat_id,)).fetchall()
         if len(subscriptions) == 0:
-            self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_EMPTY, parse_mode="MarkdownV2")
+            self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_EMPTY, parse_mode="HTML")
         else:
             message_body = ''
             for subscription in subscriptions:
@@ -58,52 +58,53 @@ class CommandController:
                     uploader_name = self.bot.updynamic_table[subscription[1]].uploader_name
                 except Exception as e:
                     uploader_name = 'Unknown'
+                    self.bot.refresh()
                     print_stack_trace(e)
                 message_body += MESSAGES.SUBS_LIST_ITEM.format(subscription[0], uploader_name, str(subscription[1]))
-            response =  self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_LIST.format(message_body), parse_mode="MarkdownV2", disable_web_page_preview=True)
+            response =  self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_LIST.format(message_body), parse_mode="HTML", disable_web_page_preview=True)
             return response
     
     def _subscribe(self, chat_id, command):
         if len(command) < 2:
-            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="MarkdownV2")
+            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="HTML")
             print(response)
         else:
             try:
                 uploader_uid = int(command[1])
                 subscription = self.db_cursor.execute('''SELECT "id" FROM subscriptions WHERE "is_active"=1 AND "chat_id"=? AND "uploader_uid"=?''', (chat_id, uploader_uid)).fetchone()
                 if not subscription is None:
-                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_EXISTS.format(str(subscription[0])), parse_mode="MarkdownV2")
+                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_EXISTS.format(str(subscription[0])), parse_mode="HTML")
                     print(response)
                     return
                 try:
-                    up = UploaderDynamic(uploader_uid, cache_resource=False)
+                    up = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
                     print(up)
                     up.refresh_info()
                 except Exception as e:
                     print_stack_trace(e)
-                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(uploader_uid), '请确认UP主存在, 并重试'), parse_mode="MarkdownV2")
+                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(uploader_uid), '请确认UP主存在, 并重试'), parse_mode="HTML")
                     print(response)
                     return
                 self.db_cursor.execute('''INSERT INTO subscriptions ("chat_id", "uploader_uid", "is_active") VALUES (?,?,?)''', (chat_id, uploader_uid, 1))
                 self.db.commit()
-                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_OK.format(up.uploader_name), parse_mode="MarkdownV2")
+                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_OK.format(up.uploader_name), parse_mode="HTML")
                 print(response)
                 self.bot.refresh()
             except Exception as e:
                 print_stack_trace(e)
-                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(command[1]), '请确认UID合法, 并重试'), parse_mode="MarkdownV2")
+                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_ADD_ERR.format(str(command[1]), '请确认UID合法, 并重试'), parse_mode="HTML")
                 print(response)
                 return
     def _unsubscribe(self, chat_id, command):
         if len(command) < 2:
-            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="MarkdownV2")
+            response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.UNKNOWN_COMMAND, parse_mode="HTML")
             print(response)
         else:
             try:
                 subscription_id = int(command[1])
                 subscription = self.db_cursor.execute('''SELECT "id", "uploader_uid" FROM subscriptions WHERE "is_active"=1 AND "chat_id"=? AND "id"=?''', (chat_id, subscription_id)).fetchone()
                 if subscription is None:
-                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_ERR.format(str(subscription_id)), parse_mode="MarkdownV2")
+                    response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_ERR.format(str(subscription_id)), parse_mode="HTML")
                     print(response)
                     return
                 self.db_cursor.execute('''UPDATE subscriptions SET "is_active"=0 WHERE "id"=?''', (subscription_id,))
@@ -113,11 +114,11 @@ class CommandController:
                 except Exception as e:
                     uploader_name = 'UID:' + str(subscription[1])
                     print_stack_trace(e)
-                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_OK.format(str(uploader_name)), parse_mode="MarkdownV2")
+                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_OK.format(str(uploader_name)), parse_mode="HTML")
                 print(response)
                 self.bot.refresh()
             except Exception as e:
                 print_stack_trace(e)
-                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_ERR.format(str(subscription_id)), parse_mode="MarkdownV2")
+                response = self.bot_controller.send_message(chat_id=chat_id, text=MESSAGES.SUBS_DEL_ERR.format(str(subscription_id)), parse_mode="HTML")
                 print(response)
                 return

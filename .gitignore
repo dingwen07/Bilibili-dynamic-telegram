@@ -138,3 +138,6 @@ dmypy.json
 # Project
 config.py
 *.db
+*.png
+*.jpg
+*.webp
