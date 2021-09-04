@@ -100,8 +100,18 @@ class Bot:
             print('polling...')
             if self.refresh_required:
                 self.refresh_required = False
-                for updynamic in self.updynamic_table.values():
-                    updynamic.refresh_info()
+                for i in range(0, len(self.updynamic_table)):
+                    updynamic = self.updynamic_table[i]
+                    try:
+                        updynamic.refresh_info()
+                    except Exception as e:
+                        print('Exception at Bot._dynamic_polling, after updynamic.refresh_info()')
+                        print_stack_trace(e)
+                        if updynamic is not None:
+                            self.updynamic_table[i] = new = UploaderDynamic(updynamic.uploader_uid)
+                        else:
+                            print('updynamic is None')
+
             for uploader_uid in self.subscription_table.keys():
                 if not uploader_uid in self.updynamic_table.keys():
                     self.updynamic_table[uploader_uid] = UploaderDynamic(uploader_uid, cache_resource=False, fetch=False)
